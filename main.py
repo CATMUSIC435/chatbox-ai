@@ -8,8 +8,6 @@ from routers import chat, learn
 from core import config
 
 app = FastAPI(title="ConectAI Server", description="Hệ thống RAG Đa Người Dùng & Học Liên Tục")
-
-# Cấu hình CORS để frontend gọi API không bị lỗi
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,7 +31,6 @@ def save_domains(domains):
 
 @app.middleware("http")
 async def dynamic_cors_validator(request: Request, call_next):
-    # Chỉ chặn Origin khi lấy dữ liệu Widget hoặc nhồi dữ liệu
     if request.url.path.startswith("/chat-stream") or request.url.path.startswith("/learn"):
         origin = request.headers.get("origin")
         if origin:
@@ -64,11 +61,7 @@ def remove_domain(domain: str):
         domains.remove(domain)
         save_domains(domains)
     return {"domains": domains}
-
-# Phục vụ thư mục static (Chứa file widget.js cho bên thứ 3 nhúng)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Nạp các routes
 app.include_router(chat.router)
 app.include_router(learn.router)
 

@@ -1,5 +1,4 @@
 (function() {
-    // Tự động tìm URL của Server AI và Tên miền nhúng
     const scripts = document.getElementsByTagName('script');
     let API_BASE_URL = "http://127.0.0.1:8000"; // Mặc định
     let customDomain = null;
@@ -17,8 +16,7 @@
 
     const style = document.createElement('style');
     style.innerHTML = `
-        /* Nút Chat hiển thị ở góc màn hình (Floating Robot) */
-        #conectai-widget-btn {
+                #conectai-widget-btn {
             position: fixed; bottom: 20px; right: 20px; width: 80px; height: 80px;
             background: transparent; border-radius: 0;
             display: flex; align-items: center; justify-content: center; 
@@ -31,8 +29,7 @@
             filter: drop-shadow(0 6px 12px rgba(0,0,0,0.15));
         }
         
-        /* Bảng Chat (Mặc định ẩn) */
-        #conectai-widget-panel {
+                #conectai-widget-panel {
             position: fixed; bottom: 100px; right: 24px; width: 380px; height: 580px; max-height: calc(100vh - 120px);
             background: #ffffff; border-radius: 20px; 
             box-shadow: 0 16px 48px rgba(0,0,0,0.12), 0 0 2px rgba(0,0,0,0.05);
@@ -46,8 +43,7 @@
             100% { opacity: 1; transform: translateY(0) scale(1); } 
         }
         
-        /* Tiêu đề bảng Chat */
-        #conectai-panel-header {
+                #conectai-panel-header {
             background: linear-gradient(135deg, ${THEME_COLOR} 0%, #1e40af 100%); 
             color: white; padding: 18px 20px; font-weight: 600;
             display: flex; justify-content: space-between; align-items: center;
@@ -63,14 +59,12 @@
         }
         #conectai-close-btn:hover { opacity: 1; background: rgba(255,255,255,0.15); }
         
-        /* Vùng hiển thị tin nhắn */
-        #conectai-chat-body {
+                #conectai-chat-body {
             flex-grow: 1; padding: 20px; overflow-y: auto; background: #fdfdfd;
             display: flex; flex-direction: column; gap: 18px; scroll-behavior: smooth;
         }
         
-        /* Bong bóng tin nhắn */
-        .conectai-msg { max-width: 85%; padding: 14px 18px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; animation: fadeIn 0.3s ease; }
+                .conectai-msg { max-width: 85%; padding: 14px 18px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity:1; transform: translateY(0); } }
         
         .conectai-msg.user { 
@@ -82,8 +76,7 @@
             border-radius: 20px 20px 20px 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #f3f4f6; 
         }
         
-        /* Khu vực nhập câu hỏi */
-        #conectai-input-area {
+                #conectai-input-area {
             display: flex; padding: 16px; background: white; gap: 12px;
             border-top: 1px solid #f3f4f6; align-items: center;
         }
@@ -104,8 +97,7 @@
         #conectai-send-btn:hover { transform: scale(1.08) rotate(5deg); box-shadow: 0 6px 16px rgba(37,99,235,0.35); }
         #conectai-send-btn svg { width: 18px; height: 18px; fill: white; margin-left: 2px;}
         
-        /* Nút bấm gợi ý (của AI đẻ ra) */
-        .conectai-sugg-container { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; max-width: 90%; align-self: flex-start;}
+                .conectai-sugg-container { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; max-width: 90%; align-self: flex-start;}
         .conectai-sugg-btn { 
             background: #ffffff; border: 1px solid #e5e7eb; color: ${THEME_COLOR}; 
             padding: 10px 14px; border-radius: 16px; font-size: 13.5px; cursor: pointer; font-weight: 500;
@@ -115,8 +107,6 @@
         .conectai-sugg-btn:hover { background: #eff6ff; border-color: ${THEME_COLOR}; transform: translateX(4px); box-shadow: 0 4px 8px rgba(37,99,235,0.1);}
     `;
     document.head.appendChild(style);
-
-    // 2. Tạo DOM Giao diện
     const btn = document.createElement('div');
     btn.id = 'conectai-widget-btn';
     btn.innerHTML = `<img src="${API_BASE_URL}/static/ai-chatbot.gif" alt="Chat">`;
@@ -124,7 +114,6 @@
 
     const panel = document.createElement('div');
     panel.id = 'conectai-widget-panel';
-    // SVG Mũi tên gửi
     const sendIcon = `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>`;
     
     panel.innerHTML = `
@@ -144,8 +133,6 @@
         </div>
     `;
     document.body.appendChild(panel);
-
-    // Xử lý bật tắt Panel
     let isOpen = false;
     btn.onclick = () => {
         isOpen = !isOpen;
@@ -156,8 +143,6 @@
         }
     };
     document.getElementById('conectai-close-btn').onclick = () => btn.click();
-
-    // 3. Xử lý Logic gửi tin nhắn (Streaming)
     const chatBody = document.getElementById('conectai-chat-body');
     const inputField = document.getElementById('conectai-input');
     const sendBtn = document.getElementById('conectai-send-btn');
@@ -171,18 +156,12 @@
         const text = presetText !== null ? presetText : inputField.value.trim();
         if(!text) return;
         inputField.value = '';
-
-        // Xóa các mảng gợi ý cũ trên màn hình cho đỡ vướng
         document.querySelectorAll('.conectai-sugg-container').forEach(el => el.remove());
-
-        // Hiện câu của User
         const userMsg = document.createElement('div');
         userMsg.className = 'conectai-msg user';
         userMsg.innerText = text;
         chatBody.appendChild(userMsg);
         chatBody.scrollTop = chatBody.scrollHeight;
-
-        // Hiện Bong bóng của Bot (Sẽ stream nội dung vào đây)
         const botMsg = document.createElement('div');
         botMsg.className = 'conectai-msg bot';
         botMsg.innerHTML = '<span style="opacity:0.5">Đang suy nghĩ...</span>';
@@ -190,7 +169,6 @@
         chatBody.scrollTop = chatBody.scrollHeight;
 
         try {
-            // Lấy tên miền nơi widget đang được nhúng (Ưu tiên thuộc tính data-domain)
             const currentDomain = customDomain || window.location.hostname || "default";
 
             const res = await fetch(`${API_BASE_URL}/chat-stream`, {
@@ -208,12 +186,9 @@
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-                // Parse the chunks
                 botMsg.innerText += decoder.decode(value, { stream: true });
                 chatBody.scrollTop = chatBody.scrollHeight;
             }
-
-            // KHI HẾT STREAM: Trích xuất phần gợi ý (Xử lý các lỗi lú lẫn của AI)
             const fullText = botMsg.innerText;
             const match = fullText.match(/\[SUGGESTIONS\]|---SUGGESTIONS---|SUGGESTIONS:?/i);
             
@@ -221,16 +196,12 @@
                 const suggestIndex = match.index;
                 botMsg.innerText = fullText.substring(0, suggestIndex).trim();
                 const suggestionsStr = fullText.substring(suggestIndex + match[0].length).trim();
-                
-                // AI có thể phân tách bằng dấu |, hoặc xuống dòng
                 let questions = [];
                 if (suggestionsStr.includes('|')) {
                     questions = suggestionsStr.split('|');
                 } else {
                     questions = suggestionsStr.split('\n');
                 }
-                
-                // Dọn dẹp các dấu gạch đầu dòng (-, *), số thứ tự, khoảng trắng thừa
                 questions = questions
                     .map(q => q.replace(/^[-\*\d\.\s]+/, '').replace(/^["']|["']$/g, '').trim())
                     .filter(q => q.length > 5); // Bỏ các câu quá ngắn

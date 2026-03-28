@@ -1,0 +1,26 @@
+# Environments
+venv/
+env/
+.venv/
+.env
+
+# Cache and Bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Vector Database
+db/
+chroma.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+
+# Static Templates (optional, can be commented out if you want to track them)
+# static/templates/*

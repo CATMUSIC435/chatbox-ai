@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConectAI - Trợ lý thông minh</title>
+    <style>
+        :root {
+            --bg-color: #343541;
+            --chat-bg: #444654;
+            --text-color: #ECECF1;
+            --accent: #10a37f;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar (Cột Upload) */
+        #sidebar {
+            width: 300px;
+            background: #202123;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #4D4D4F;
+        }
+
+        .upload-card {
+            background: var(--chat-bg);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-card h3 {
+            margin-top: 0;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .upload-btn:hover {
+            background: #0e8f6e;
+        }
+
+        #uploadStatus {
+            font-size: 12px;
+            margin-top: 10px;
+            color: #10a37f;
+        }
+
+        /* Main Chat Area */
+        #main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #chat-window {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 80px;
+        }
+
+        .message {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .message.bot {
+            background: var(--chat-bg);
+        }
+
+        .message-content {
+            width: 100%;
+            max-width: 800px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .sender-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #8e8ea0;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        /* Input Area */
+        #input-area {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(180deg, rgba(53, 55, 64, 0), #353740 30%);
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .input-box {
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            background: #40414f;
+            border-radius: 12px;
+            padding: 10px 15px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        textarea {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            resize: none;
+            min-height: 24px;
+            max-height: 200px;
+            font-family: inherit;
+            font-size: 16pxLine;
+            outline: none;
+            padding-right: 40px;
+        }
+
+        #send-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: absolute;
+            right: 12px;
+            bottom: 10px;
+        }
+
+        #send-btn:hover {
+            background: #0e8f6e;
+        }
+
+        /* Gợi ý câu hỏi */
+        .suggestions-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .suggestion-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #c5c5d2;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: normal;
+        }
+
+        .suggestion-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            color: white;
+            border-color: #10a37f;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar: Tính năng Học dữ liệu -->
+    <div id="sidebar">
+        <h2>ConectAI</h2>
+        <p style="font-size: 13px; color: #8e8ea0;">Hệ thống tự học liên tục</p>
+
+        <div class="upload-card">
+            <h3>Dạy Kiến Thức Mới</h3>
+
+            <label for="domainInput"
+                style="display: block; font-size: 13px; color: #ccc; margin-bottom: 5px; text-align: left;">1. Gõ Tên
+                miền gán nhãn:</label>
+            <input type="text" id="domainInput" placeholder="vd: batdongsan.com"
+                style="width: 100%; box-sizing: border-box; padding: 8px 10px; margin-bottom: 12px; border-radius: 4px; border: none; outline: none; font-size: 13px;">
+
+            <label for="fileInput" class="upload-btn">2. Chọn file 📂</label>
+            <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.xlsx,.csv,.json">
+            
+            <button onclick="clearDomainData()" style="background:#ef4444; color:white; border:none; padding:10px 15px; border-radius:4px; width:100%; margin-top:10px; cursor:pointer; font-weight:bold; transition: 0.2s;">3. Xóa Dữ Liệu Tên Miền 🗑️</button>
+            <div id="uploadStatus"></div>
+
+            <div
+                style="margin-top: 15px; text-align: left; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                <p style="font-size: 12px; color: #10a37f; font-weight: bold; margin-bottom: 6px;">⬇️ Tải file mẫu
+                    chuẩn:</p>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="/static/templates/mau_kienthuc.txt" download
+                        style="font-size: 11px; color: #e5e7eb; text-decoration: none; padding: 4px 8px; border: 1px solid #4b5563; border-radius: 4px; background: #374151;">.TXT</a>
+                    <a href="/static/templates/mau_kienthuc.docx" download
+                        style="font-size: 11px; color: #e5e7eb; text-decoration: none; padding: 4px 8px; border: 1px solid #2563eb; border-radius: 4px; background: #1e3a8a;">.DOCX</a>
+                    <a href="/static/templates/mau_kienthuc.xlsx" download
+                        style="font-size: 11px; color: #e5e7eb; text-decoration: none; padding: 4px 8px; border: 1px solid #059669; border-radius: 4px; background: #064e3b;">.XLSX</a>
+                    <a href="/static/templates/mau_kienthuc.csv" download
+                        style="font-size: 11px; color: #e5e7eb; text-decoration: none; padding: 4px 8px; border: 1px solid #d97706; border-radius: 4px; background: #78350f;">.CSV</a>
+                    <a href="/static/templates/mau_kienthuc.json" download
+                        style="font-size: 11px; color: #e5e7eb; text-decoration: none; padding: 4px 8px; border: 1px solid #9333ea; border-radius: 4px; background: #581c87;">.JSON</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="upload-card" style="margin-top: 10px;">
+            <h3 style="color: #60a5fa;">🌐 Bảo Vệ Widget (CORS)</h3>
+            <p style="font-size: 11px; color: #ccc; text-align: left; line-height: 1.4; margin-bottom: 10px;">
+                Chỉ những website khớp "http://" dưới đây mới được phép nhúng mã Widget của bạn.
+            </p>
+
+            <div id="domain-cors-list"
+                style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; text-align: left;">
+                <!-- dynamic domain chips -->
+            </div>
+
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="newCORSInput" placeholder="https://abc.com"
+                    style="width: 100%; box-sizing: border-box; padding: 8px; border-radius: 4px; border: none; outline: none; font-size: 12px;">
+                <button onclick="addCORS()"
+                    style="background:#60a5fa; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; padding:0 12px; transition: 0.2s;">+</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main: Giao diện Chat -->
+    <div id="main">
+        <div id="chat-window">
+            <div class="message bot" id="welcome-msg">
+                <div class="message-content">
+                    <div class="sender-name">ConectAI</div>
+                    Xin chào! Tôi là trợ lý ảo được tích hợp dữ liệu của bạn. Bạn muốn tôi giúp gì hôm nay?
+                    <br><br>
+                    <span style="font-size: 13px; color: #8e8ea0;">💡 Hãy thử tải lên một file text ở cột bên trái để
+                        tôi học, hoặc chọn một câu hỏi mẫu:</span>
+
+                    <div class="suggestions-container" id="suggestions">
+                        <div class="suggestion-btn" onclick="sendSuggestion('Dự án nằm ở khu vực nào?')">📍 Vị trí dự án ở đâu?</div>
+                        <div class="suggestion-btn" onclick="sendSuggestion('Giá bán căn hộ rẻ nhất là bao nhiêu?')">💰 Giá bán bao nhiêu?</div>
+                        <div class="suggestion-btn" onclick="sendSuggestion('Có những tiện ích nổi bật nào?')">🏊‍♂️ Tiện ích nội khu</div>
+                        <div class="suggestion-btn" onclick="sendSuggestion('Tóm tắt lại các thông tin nổi bật của dự án này')">📄 Tóm tắt dự án</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="input-area">
+            <div class="input-box">
+                <textarea id="userInput" placeholder="Hỏi AI về kiến thức..." rows="1"
+                    oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+                <button id="send-btn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function sendSuggestion(text) {
+            document.getElementById("userInput").value = text;
+            sendMessage();
+        }
+
+        // Xử lý Giao diện Chat (Sử dụng Stream)
+        async function sendMessage() {
+            const input = document.getElementById("userInput");
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = "";
+            input.style.height = "auto";
+
+            // Ẩn bảng gợi ý nều đang hiện
+            const sugg = document.getElementById("suggestions");
+            if (sugg) sugg.style.display = "none";
+
+            // Hiện câu hỏi của user
+            addMessageCard("Bạn", text, "user");
+
+            // Chuẩn bị thẻ trả lời cho Bot
+            const botCardId = "bot-msg-" + Date.now();
+            addMessageCard("ConectAI", "...", "bot", botCardId);
+            const botTextSpan = document.getElementById(botCardId);
+
+            try {
+                // Lấy tên miền từ ô input (Dạy kiến thức) để test trực tiếp trên Web, mặc định lấy giá trị http://127.0.0.1
+                const currentDomain = document.getElementById("domainInput").value.trim() || "http://127.0.0.1";
+                
+                // Gọi API Streaming
+                const res = await fetch("/chat-stream", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question: text, domain: currentDomain })
+                });
+
+                if (!res.ok) throw new Error("Server error");
+
+                botTextSpan.innerText = "";
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+
+                // Đọc từng dòng chữ (stream)
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    botTextSpan.innerText += decoder.decode(value, { stream: true });
+                    scrollToBottom();
+                }
+
+                // === XỬ LÝ CHUYỂN ĐỔI CHỮ GỢI Ý (TỪ AI) THÀNH NÚT BẤM ===
+                const fullText = botTextSpan.innerText;
+                const match = fullText.match(/\[SUGGESTIONS\]|---SUGGESTIONS---|SUGGESTIONS:?/i);
+
+                if (match) {
+                    const suggestIndex = match.index;
+                    // Cắt chữ ra
+                    const mainText = fullText.substring(0, suggestIndex).trim();
+                    const suggestionsStr = fullText.substring(suggestIndex + match[0].length).trim();
+
+                    // Cập nhật lại khung chat chỉ chứa câu trả lời gốc
+                    botTextSpan.innerText = mainText;
+
+                    // AI có thể phân tách bằng dấu |, hoặc xuống dòng
+                    let questions = [];
+                    if (suggestionsStr.includes('|')) {
+                        questions = suggestionsStr.split('|');
+                    } else {
+                        questions = suggestionsStr.split('\n');
+                    }
+                    
+                    // Lọc và tạo các nút bấm
+                    questions = questions
+                        .map(q => q.replace(/^[-\*\d\.\s]+/, '').replace(/^["']|["']$/g, '').trim())
+                        .filter(q => q.length > 5);
+                        
+                    if (questions.length > 0) {
+                        const sugDiv = document.createElement("div");
+                        sugDiv.className = "suggestions-container";
+                        sugDiv.style.marginTop = "15px";
+                        sugDiv.style.justifyContent = "flex-start"; // Căn lề trái cho tin nhắn bot
+
+                        questions.slice(0, 3).forEach(q => {
+                            const btn = document.createElement("div");
+                            btn.className = "suggestion-btn";
+                            btn.innerText = "✨ " + q;
+                            btn.onclick = () => sendSuggestion(q);
+                            sugDiv.appendChild(btn);
+                        });
+
+                        // Nhúng các nút bấm vào thẳng dưới đoạn text của Bot
+                        botTextSpan.parentElement.appendChild(sugDiv);
+                    }
+                }
+
+            } catch (err) {
+                botTextSpan.innerText = "❌ Đã xảy ra lỗi kết nối với AI: " + err.message;
+            }
+            scrollToBottom();
+        }
+
+        // Enter để gửi
+        document.getElementById("userInput").addEventListener("keypress", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function addMessageCard(sender, text, type, textId = null) {
+            const chatWindow = document.getElementById("chat-window");
+            const msgDiv = document.createElement("div");
+            msgDiv.className = "message " + type;
+
+            // Xử lý id cho thẻ text để update stream
+            const idAttr = textId ? `id="${textId}"` : '';
+
+            msgDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="sender-name">${sender}</div>
+                    <span ${idAttr}>${text}</span>
+                </div>
+            `;
+            chatWindow.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            const win = document.getElementById("chat-window");
+            win.scrollTop = win.scrollHeight;
+        }
+
+        // Xử lý Upload File TXT
+        document.getElementById("fileInput").addEventListener("change", async function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const domain = document.getElementById("domainInput").value.trim();
+            if (!domain) {
+                alert("Vui lòng nhập tên miền của trang web (Ví dụ: batdongsan.com) trước khi tải file để AI phân biệt được kiến thức!");
+                e.target.value = "";
+                return;
+            }
+
+            const statusLabel = document.getElementById("uploadStatus");
+            statusLabel.style.color = "#ccc";
+            statusLabel.innerText = `Đang học dữ liệu cho ${domain}...`;
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                // Pass the domain via query param so upload endpoint detects it
+                const res = await fetch(`/learn/upload?domain=${encodeURIComponent(domain)}`, {
+                    method: "POST",
+                    headers: { "x-api-key": "conectai-secret-2026" },
+                    body: formData
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    statusLabel.style.color = "#10a37f";
+                    statusLabel.innerText = "✅ " + result.message;
+                } else {
+                    statusLabel.style.color = "#ff4a4a";
+                    statusLabel.innerText = "❌ " + result.detail;
+                }
+            } catch (err) {
+                statusLabel.style.color = "#ff4a4a";
+                statusLabel.innerText = "❌ Lỗi: " + err.message;
+            }
+            // Xóa file cũ để chọn lại file y hệt vẫn nhận event
+            e.target.value = "";
+        });
+
+        // Xóa Dữ Liệu Tên Miền
+        async function clearDomainData() {
+            const domain = document.getElementById("domainInput").value.trim();
+            if(!domain) {
+                alert("Bạn phải gõ tên miền (Ví dụ: batdongsan.com) vào ô số 1 để hệ thống biết cần xóa dữ liệu của trang nào nhé!");
+                return;
+            }
+            if(!confirm(`Xác nhận XÓA SẠCH toàn bộ dữ liệu AI đã học của web: ${domain}? Hành động này không thể hoàn tác!`)) return;
+
+            const statusLabel = document.getElementById("uploadStatus");
+            statusLabel.style.color = "#ccc";
+            statusLabel.innerText = `Đang ra lệnh xóa sạch dữ liệu của ${domain}...`;
+
+            try {
+                const res = await fetch(`/learn/domain?domain=${encodeURIComponent(domain)}`, {
+                    method: "DELETE",
+                    headers: { "x-api-key": "conectai-secret-2026" }
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    statusLabel.style.color = "#ef4444";
+                    statusLabel.innerText = "✅ " + result.message;
+                } else {
+                    statusLabel.style.color = "#ff4a4a";
+                    statusLabel.innerText = "❌ " + result.detail;
+                }
+            } catch (err) {
+                statusLabel.style.color = "#ff4a4a";
+                statusLabel.innerText = "❌ Lỗi: " + err.message;
+            }
+        }
+
+        // ================= Quản lý CORS Domains =================
+        async function loadCORS() {
+            try {
+                const res = await fetch("/api/domains");
+                const data = await res.json();
+                const list = document.getElementById("domain-cors-list");
+                list.innerHTML = "";
+                data.domains.forEach(d => {
+                    const el = document.createElement("span");
+                    el.style = "background: rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,0.05); color: #e5e7eb;";
+                    el.innerHTML = `${d} <b style="cursor:pointer; color:#ff6b6b; padding: 0 4px;" onclick="removeCORS('${d}')">✖</b>`;
+                    list.appendChild(el);
+                });
+            } catch (e) {
+                console.error("Lỗi tải Domain", e);
+            }
+        }
+
+        async function addCORS() {
+            const input = document.getElementById("newCORSInput");
+            let d = input.value.trim();
+            if (!d) return;
+            if (!d.startsWith("http")) return alert("Tên miền rào chắn bảo mật CORS bắt buộc phải có tiền tố http:// hoặc https://");
+
+            // Xóa dấu / ở cuối nếu có
+            if (d.endsWith("/")) d = d.slice(0, -1);
+
+            await fetch("/api/domains", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ domain: d })
+            });
+            input.value = "";
+            loadCORS();
+        }
+
+        async function removeCORS(d) {
+            if (!confirm("Xóa tên miền này khỏi danh sách cho phép?")) return;
+            await fetch(`/api/domains?domain=${encodeURIComponent(d)}`, { method: "DELETE" });
+            loadCORS();
+        }
+
+        // Cần gọi loadCORS() khi khởi tạo
+        loadCORS();
+    </script>
+    <script src="/static/widget.js" data-domain="http://127.0.0.1"></script>
+</body>
+
+</html>
